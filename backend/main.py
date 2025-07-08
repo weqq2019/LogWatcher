@@ -5,7 +5,7 @@ import uvicorn
 from contextlib import asynccontextmanager
 
 from database import create_tables, engine
-from routes import news, tools, projects, dashboard
+from routes import news, tools, projects, dashboard, collectors
 
 
 # 应用生命周期管理
@@ -47,6 +47,7 @@ app.include_router(news.router, prefix="/api/v1/news", tags=["技术新闻"])
 app.include_router(tools.router, prefix="/api/v1/tools", tags=["工具更新"])
 app.include_router(projects.router, prefix="/api/v1/projects", tags=["开源项目"])
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["仪表盘"])
+app.include_router(collectors.router, prefix="/api/v1/collectors", tags=["数据收集器"])
 
 
 # 根路径
