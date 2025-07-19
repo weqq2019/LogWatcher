@@ -1,0 +1,82 @@
+graph TD
+    A[👤 用户点击收集AI新闻] --> B[📱 前端发送POST请求]
+    B --> C[🔄 后端路由 /api/v1/news/ai/collect]
+    
+    C --> D{🔒 检查每日调用限制}
+    D -->|超过限制| E[❌ 返回429错误]
+    D -->|未超过限制| F[🎯 获取AI新闻收集器]
+    
+    F --> G{🔍 收集器是否存在?}
+    G -->|不存在| H[❌ 返回404错误]
+    G -->|存在| I[🤖 调用收集器运行]
+    
+    I --> J[🌐 构建API请求]
+    J --> K[📝 生成AI新闻提示词]
+    K --> L[🔗 发送HTTP请求到OpenAI-HK]
+    
+    L --> M{📡 网络连接状态}
+    M -->|连接失败| N[⚠️ 触发备用机制]
+    M -->|连接成功| O[📄 解析AI响应]
+    
+    N --> P[📋 创建备用新闻项]
+    P --> Q[💾 保存到数据库]
+    
+    O --> R[🔍 解析新闻内容]
+    R --> S[📊 创建CollectorItem对象]
+    S --> T{🔄 检查重复标题}
+    T -->|重复| U[⏭️ 跳过该新闻]
+    T -->|不重复| V[✅ 创建NewsArticle]
+    
+    V --> W[💾 保存到数据库]
+    U --> W
+    Q --> W
+    
+    W --> X[📈 更新API调用记录]
+    X --> Y[📤 返回收集结果]
+    Y --> Z[📱 前端显示结果]
+    
+    E --> Z
+    H --> Z
+    
+    subgraph "🏗️ 数据库层"
+        DB1[(📰 NewsArticle)]
+        DB2[(📊 APICallRecord)]
+        DB3[(📑 Category)]
+    end
+    
+    subgraph "🔧 收集器系统"
+        CM[📦 CollectorManager]
+        AC[🤖 AINewsCollector]
+        BC[📋 BaseCollector]
+        
+        AC --> BC
+        CM --> AC
+    end
+    
+    subgraph "🌐 外部API"
+        API[🔗 api.openai-hk.com]
+        MODEL[🧠 grok-3-deepsearch]
+        
+        API --> MODEL
+    end
+    
+    subgraph "⚙️ 配置层"
+        CFG[🔧 config.py]
+        ENV[🌍 环境变量]
+        
+        CFG --> ENV
+    end
+    
+    W --> DB1
+    X --> DB2
+    I --> CM
+    L --> API
+    J --> CFG
+    
+    style A fill:#e1f5fe
+    style Z fill:#e8f5e8
+    style N fill:#fff3e0
+    style E fill:#ffebee
+    style H fill:#ffebee
+    style API fill:#f3e5f5
+    style MODEL fill:#e8eaf6

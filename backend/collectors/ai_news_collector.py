@@ -25,15 +25,17 @@ from config import settings  # 🔄 修复导入：使用settings而不是Config
 class AINewsCollector(BaseCollector):
     """AI新闻收集器"""
 
-    def __init__(self, name: str = "ai_news"):
+    def __init__(self, name: str = "ai_news", test_mode: bool = True):
         """
         初始化AI新闻收集器
 
         Args:
             name (str): 收集器名称
+            test_mode (bool): 是否使用测试模式（不调用API，使用本地测试数据）
         """
         super().__init__()
         self.name = name
+        self.test_mode = test_mode
 
         # 从配置获取API设置
         self.api_url = settings.deepseek_api_url  # 🔄 使用settings
@@ -85,15 +87,60 @@ class AINewsCollector(BaseCollector):
             self.logger.info("未配置代理，使用HTTP/1.1直连")
 
         self.logger.info(f"AI新闻收集器初始化完成: {self.name}")
-        self.logger.info(f"API URL: {self.api_url}")
-        self.logger.info(f"API Key: {self.api_key[:20]}...")
-        self.logger.info(f"使用模型: {self.model}")  # 🔄 记录使用的模型
+        if self.test_mode:
+            self.logger.info("🧪 测试模式：将使用本地测试数据，不调用API")
+        else:
+            self.logger.info(f"🌐 API模式：{self.api_url}")
+            self.logger.info(f"API Key: {self.api_key[:20]}...")
+            self.logger.info(f"使用模型: {self.model}")  # 🔄 记录使用的模型
 
     def get_source_name(self) -> str:
         return "AI新闻助手"
 
     async def collect(self) -> List[CollectorItem]:
         """收集AI新闻项目"""
+        try:
+            if self.test_mode:
+                self.logger.info("🧪 使用测试模式：从本地文件读取数据")
+                return await self._collect_from_test_data()
+            else:
+                self.logger.info("🌐 使用API模式：调用远程API")
+                return await self._collect_from_api()
+
+        except Exception as e:
+            self.logger.error(f"收集AI新闻时发生错误: {str(e)}")
+            return self._create_fallback_news()
+
+    async def _collect_from_test_data(self) -> List[CollectorItem]:
+        """从测试数据收集新闻（不调用API）"""
+        try:
+            test_file = os.path.join(os.path.dirname(__file__), '..', 'test_api_response.txt')
+            
+            with open(test_file, 'r', encoding='utf-8') as f:
+                result = f.read()
+                
+            self.logger.info(f"✅ 成功读取测试数据，长度: {len(result)} 字符")
+            
+            # 使用同样的解析器处理测试数据
+            parsed_content = self._parse_response(result)
+            
+            if parsed_content:
+                self.logger.info(f"✅ 解析成功，内容长度: {len(parsed_content)} 字符")
+                news_items = self._parse_ai_response(parsed_content)
+                return news_items if news_items else self._create_fallback_news()
+            else:
+                self.logger.error("❌ 测试数据解析失败")
+                return self._create_fallback_news()
+                
+        except FileNotFoundError:
+            self.logger.error("❌ 测试文件未找到: test_api_response.txt")
+            return self._create_fallback_news()
+        except Exception as e:
+            self.logger.error(f"❌ 读取测试数据失败: {e}")
+            return self._create_fallback_news()
+
+    async def _collect_from_api(self) -> List[CollectorItem]:
+        """从API收集新闻（调用远程API）"""
         try:
             # 准备API请求
             headers = {
@@ -121,9 +168,6 @@ class AINewsCollector(BaseCollector):
             }
 
             # 发送API请求，使用与 test_official_api.py 相同的成功配置
-            import requests
-            import os
-            
             self.logger.info("发送API请求（简化直连模式）...")
             response = requests.post(
                 self.api_url, 
@@ -133,74 +177,16 @@ class AINewsCollector(BaseCollector):
             )
             
             if response.status_code == 200:
-                # 第一步：接收原始数据
-                self.logger.info("=" * 50)
-                self.logger.info("步骤1: 接收API响应数据")
+                # 使用经过验证的解析器处理响应
+                result = response.content.decode("utf-8")
+                parsed_content = self._parse_response(result)
                 
-                try:
-                    result = response.content.decode("utf-8")
-                    self.logger.info(f"✅ 成功接收原始响应，数据长度: {len(result)} 字符")
-                    self.logger.info(f"📄 原始响应前1000字符:")
-                    self.logger.info(result[:1000])
-                    self.logger.info("=" * 50)
-                    
-                except Exception as e:
-                    self.logger.error(f"❌ 步骤1失败 - 数据接收错误: {e}")
-                    return self._create_fallback_news()
-                
-                # 第二步：解析JSON结构
-                self.logger.info("步骤2: 解析JSON响应结构")
-                try:
-                    response_data = json.loads(result)
-                    self.logger.info(f"✅ JSON解析成功")
-                    self.logger.info(f"📊 响应结构键: {list(response_data.keys())}")
-                    
-                    if 'choices' in response_data:
-                        choices = response_data.get('choices', [])
-                        self.logger.info(f"✅ 找到choices数组，长度: {len(choices)}")
-                        if choices and 'message' in choices[0]:
-                            self.logger.info(f"✅ 找到message对象")
-                        else:
-                            self.logger.warning(f"⚠️ choices结构异常: {choices}")
-                    else:
-                        self.logger.error(f"❌ 响应中缺少choices字段")
-                        
-                except Exception as e:
-                    self.logger.error(f"❌ 步骤2失败 - JSON解析错误: {e}")
-                    self.logger.error(f"原始数据: {result[:500]}")
-                    return self._create_fallback_news()
-                
-                # 第三步：提取AI内容
-                self.logger.info("步骤3: 提取AI生成内容")
-                try:
-                    content = response_data.get('choices', [{}])[0].get('message', {}).get('content', '')
-                    self.logger.info(f"✅ 成功提取AI内容，长度: {len(content)} 字符")
-                    
-                    if content:
-                        self.logger.info(f"📝 AI内容前500字符:")
-                        self.logger.info(content[:500])
-                        self.logger.info("=" * 50)
-                    else:
-                        self.logger.error(f"❌ 步骤3失败 - AI内容为空")
-                        return self._create_fallback_news()
-                        
-                except Exception as e:
-                    self.logger.error(f"❌ 步骤3失败 - 内容提取错误: {e}")
-                    return self._create_fallback_news()
-                
-                # 第四步：进入内容解析器
-                self.logger.info("步骤4: 进入AI内容解析器")
-                try:
-                    news_items = self._parse_ai_response(content)
-                    if news_items:
-                        self.logger.info(f"✅ 解析成功，生成 {len(news_items)} 条新闻")
-                        return news_items
-                    else:
-                        self.logger.error(f"❌ 步骤4失败 - 解析器返回空结果")
-                        return self._create_fallback_news()
-                        
-                except Exception as e:
-                    self.logger.error(f"❌ 步骤4失败 - 解析器处理错误: {e}")
+                if parsed_content:
+                    self.logger.info(f"✅ 解析成功，内容长度: {len(parsed_content)} 字符")
+                    news_items = self._parse_ai_response(parsed_content)
+                    return news_items if news_items else self._create_fallback_news()
+                else:
+                    self.logger.error("❌ 响应解析失败")
                     return self._create_fallback_news()
             else:
                 self.logger.error(f"API请求失败: {response.status_code}, {response.text}")
@@ -392,6 +378,126 @@ class AINewsCollector(BaseCollector):
             )
 
         return items[:10]  # 🔄 限制返回最多10条新闻
+
+    def _parse_response(self, response_text):
+        """解析API响应，提取AI新闻内容（从test_official_api.py移植）"""
+        try:
+            # 先尝试直接解析JSON
+            response_data = json.loads(response_text)
+            
+            # 检查响应格式
+            if 'choices' not in response_data:
+                self.logger.error("响应格式错误：缺少 'choices' 字段")
+                return None
+                
+            if not response_data['choices']:
+                self.logger.error("响应为空：'choices' 数组为空")
+                return None
+                
+            # 提取内容
+            choice = response_data['choices'][0]
+            if 'message' not in choice:
+                self.logger.error("响应格式错误：缺少 'message' 字段")
+                return None
+                
+            message = choice['message']
+            if 'content' not in message:
+                self.logger.error("响应格式错误：缺少 'content' 字段")
+                return None
+                
+            content = message['content']
+            
+            self.logger.info("=" * 50)
+            self.logger.info("解析成功！AI新闻内容:")
+            self.logger.info("=" * 50)
+            self.logger.info(content[:500] + "..." if len(content) > 500 else content)
+            self.logger.info("=" * 50)
+            
+            return content
+            
+        except json.JSONDecodeError as e:
+            self.logger.error(f"JSON直接解析失败: {e}")
+            self.logger.info("尝试修复JSON格式...")
+            
+            try:
+                # 尝试手动修复JSON格式问题
+                fixed_content = self._fix_json_content(response_text)
+                if fixed_content:
+                    self.logger.info("=" * 50)
+                    self.logger.info("修复JSON后解析成功！AI新闻内容:")
+                    self.logger.info("=" * 50)
+                    self.logger.info(fixed_content[:500] + "..." if len(fixed_content) > 500 else fixed_content)
+                    self.logger.info("=" * 50)
+                    return fixed_content
+                else:
+                    self.logger.error("JSON修复失败")
+                    return None
+                    
+            except Exception as fix_error:
+                self.logger.error(f"JSON修复过程中发生错误: {fix_error}")
+                self.logger.error("原始响应内容（前500字符）:")
+                self.logger.error(response_text[:500] + "..." if len(response_text) > 500 else response_text)
+                return None
+                
+        except Exception as e:
+            self.logger.error(f"解析响应时发生错误: {e}")
+            return None
+
+    def _fix_json_content(self, response_text):
+        """尝试修复损坏的JSON格式（从test_official_api.py移植）"""
+        try:
+            # 查找content字段的开始位置
+            content_start = response_text.find('"content":"')
+            if content_start == -1:
+                self.logger.error("找不到content字段")
+                return None
+                
+            # 找到content内容的开始位置
+            content_value_start = content_start + len('"content":"')
+            
+            # 查找content字段的结束位置
+            # 从content值开始，查找下一个字段的开始或对象的结束
+            pos = content_value_start
+            quote_count = 0
+            escape_next = False
+            
+            while pos < len(response_text):
+                char = response_text[pos]
+                
+                if escape_next:
+                    escape_next = False
+                    pos += 1
+                    continue
+                    
+                if char == '\\':
+                    escape_next = True
+                    pos += 1
+                    continue
+                    
+                if char == '"':
+                    quote_count += 1
+                    # 查找content值结束的引号，然后是逗号或右大括号
+                    if quote_count > 0 and pos + 1 < len(response_text):
+                        next_chars = response_text[pos+1:pos+3]
+                        if next_chars.startswith(',"') or next_chars.startswith('}'):
+                            # 找到了content的结束位置
+                            content_value = response_text[content_value_start:pos]
+                            
+                            # 清理content内容，移除多余的转义字符
+                            content_value = content_value.replace('\\"', '"')
+                            content_value = content_value.replace('\\n', '\n')
+                            content_value = content_value.replace('\\t', '\t')
+                            
+                            return content_value
+                            
+                pos += 1
+                
+            self.logger.error("未能找到content字段的结束位置")
+            return None
+            
+        except Exception as e:
+            self.logger.error(f"修复JSON时发生错误: {e}")
+            return None
 
     def _is_valid_news_title(self, line: str) -> bool:
         """判断是否是有效的新闻标题"""

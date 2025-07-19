@@ -1,0 +1,67 @@
+graph TD
+    A[_parse_versions 解析版本信息] --> B[使用BeautifulSoup解析HTML]
+    B --> C[📅 查找所有日期信息]
+    C --> D["正则表达式匹配<br/>([A-Za-z]+ \d+, \d{4})"]
+    
+    D --> E[🔢 方法1: 精确版本号匹配]
+    E --> F["查找明确标记的版本号<br/>使用正则 ^\d+\.\d+$"]
+    F --> G[版本号过滤]
+    G --> H["Cursor版本范围过滤<br/>(0.40+) 或 (1.0+)"]
+    
+    H --> I[找到足够版本?]
+    I -->|否| J[🔄 方法2: 备用搜索]
+    J --> K["更宽泛的版本号搜索<br/>(\d+\.\d+) 全页面匹配"]
+    K --> L["严格过滤<br/>只接受合理的Cursor版本"]
+    
+    I -->|是| M[📄 查找版本标题]
+    L --> M
+    M --> N["查找所有h2标签<br/>跳过'changelog'主标题"]
+    
+    N --> O[📋 版本信息配对]
+    O --> P["匹配: 版本号 + 日期 + 标题<br/>创建version_info_pairs"]
+    
+    P --> Q[🎯 已知版本优先过滤]
+    Q --> R["优先选择已知版本<br/>1.2, 1.1, 1.0, 0.50, 0.49"]
+    R --> S[限制版本数量 ≤ 6个]
+    
+    S --> T[📊 处理每个版本]
+    T --> U[检查数据库]
+    U --> V{版本已存在?}
+    
+    V -->|是| W[📋 跳过API调用<br/>使用现有数据]
+    V -->|否| X[🆕 新版本需要API调用]
+    
+    X --> Y[🚀 一次性API调用]
+    Y --> Z["_translate_and_analyze_with_deepseek<br/>JSON格式请求"]
+    Z --> AA[解析JSON响应]
+    AA --> BB{JSON解析成功?}
+    
+    BB -->|是| CC[✅ 获取翻译+分析结果]
+    BB -->|否| DD[🔄 备用文本解析]
+    DD --> CC
+    
+    W --> EE[创建CollectorItem]
+    CC --> EE
+    EE --> FF[所有版本处理完成?]
+    FF -->|否| T
+    FF -->|是| GG[按版本号排序]
+    GG --> HH[🎉 返回完整结果]
+    
+    style A fill:#e1f5fe
+    style Y fill:#fff3e0
+    style CC fill:#e8f5e8
+    style HH fill:#81c784
+    
+    classDef dateFind fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef versionMatch fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef apiCall fill:#ffecb3,stroke:#ff8f00,stroke-width:2px
+    classDef success fill:#e8f5e8,stroke:#4caf50,stroke-width:2px
+    classDef database fill:#f3e5f5,stroke:#e91e63,stroke-width:2px
+    classDef fallback fill:#fce4ec,stroke:#ad1457,stroke-width:2px
+    
+    class C,D dateFind
+    class E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S versionMatch
+    class Y,Z,AA,BB apiCall
+    class CC,EE,GG,HH success
+    class U,V,W database
+    class DD fallback 

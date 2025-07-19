@@ -1,0 +1,128 @@
+graph TB
+    subgraph "🌐 用户界面层"
+        UI[📱 Vue3 前端界面]
+        BTN[🔘 收集AI新闻按钮]
+        LIST[📋 新闻列表显示]
+        
+        UI --> BTN
+        UI --> LIST
+    end
+    
+    subgraph "🔄 API网关层"
+        NGINX[🌐 Nginx反向代理]
+        CORS[🔗 CORS中间件]
+        
+        NGINX --> CORS
+    end
+    
+    subgraph "⚡ 应用服务层"
+        FASTAPI[🚀 FastAPI应用]
+        ROUTER[🔄 news.py路由]
+        MIDDLEWARE[🔧 中间件]
+        
+        FASTAPI --> ROUTER
+        FASTAPI --> MIDDLEWARE
+    end
+    
+    subgraph "🎯 业务逻辑层"
+        MANAGER[📦 CollectorManager]
+        COLLECTOR[🤖 AINewsCollector]
+        VALIDATOR[✅ 数据验证器]
+        LIMITER[🔒 频率限制器]
+        
+        MANAGER --> COLLECTOR
+        ROUTER --> MANAGER
+        ROUTER --> VALIDATOR
+        ROUTER --> LIMITER
+    end
+    
+    subgraph "🔧 数据处理层"
+        PARSER[📝 内容解析器]
+        DEDUP[🔄 去重检查器]
+        MAPPER[🗺️ 数据映射器]
+        
+        COLLECTOR --> PARSER
+        PARSER --> DEDUP
+        DEDUP --> MAPPER
+    end
+    
+    subgraph "💾 数据持久层"
+        ORM[🏗️ SQLAlchemy ORM]
+        MODELS[📊 数据模型]
+        SESSION[🔄 数据库会话]
+        
+        ORM --> MODELS
+        ORM --> SESSION
+        MAPPER --> ORM
+    end
+    
+    subgraph "🗄️ 数据库层"
+        MYSQL[(🐬 MySQL 8.0)]
+        REDIS[(🔴 Redis缓存)]
+        
+        SESSION --> MYSQL
+        LIMITER --> REDIS
+    end
+    
+    subgraph "🌍 外部服务层"
+        OPENAI[🤖 OpenAI-HK API]
+        GROK[🧠 Grok-3-DeepSearch]
+        PROXY[🔗 代理服务器]
+        
+        OPENAI --> GROK
+        COLLECTOR --> PROXY
+        PROXY --> OPENAI
+    end
+    
+    subgraph "🐳 容器化层"
+        DOCKER[🐳 Docker容器]
+        COMPOSE[📋 Docker Compose]
+        NETWORK[🌐 Docker网络]
+        
+        DOCKER --> COMPOSE
+        COMPOSE --> NETWORK
+    end
+    
+    subgraph "🔧 配置管理层"
+        CONFIG[⚙️ config.py]
+        ENV[🌍 环境变量]
+        SECRETS[🔐 密钥管理]
+        
+        CONFIG --> ENV
+        CONFIG --> SECRETS
+    end
+    
+    subgraph "📊 监控日志层"
+        LOGGER[📝 日志系统]
+        MONITOR[📈 性能监控]
+        ERROR[⚠️ 错误处理]
+        
+        LOGGER --> MONITOR
+        LOGGER --> ERROR
+    end
+    
+    %% 连接关系
+    UI --> NGINX
+    NGINX --> FASTAPI
+    COLLECTOR --> CONFIG
+    COLLECTOR --> LOGGER
+    DOCKER --> MYSQL
+    DOCKER --> REDIS
+    DOCKER --> FASTAPI
+    
+    %% 数据流向
+    BTN -.->|用户点击| ROUTER
+    ROUTER -.->|触发收集| COLLECTOR
+    COLLECTOR -.->|API调用| OPENAI
+    OPENAI -.->|返回内容| PARSER
+    PARSER -.->|存储数据| MYSQL
+    MYSQL -.->|查询数据| LIST
+    
+    %% 样式设置
+    style UI fill:#e3f2fd
+    style FASTAPI fill:#e8f5e8
+    style COLLECTOR fill:#fff3e0
+    style OPENAI fill:#f3e5f5
+    style MYSQL fill:#e0f2f1
+    style DOCKER fill:#e1f5fe
+    style ERROR fill:#ffebee

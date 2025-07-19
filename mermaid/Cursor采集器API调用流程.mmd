@@ -1,0 +1,59 @@
+graph TD
+    A[新版本检测到] --> B[💰 开始API调用流程]
+    B --> C[总计3次API调用]
+    
+    C --> D[第1次: 翻译内容]
+    C --> E[第2次: 翻译标题]
+    C --> F[第3次: 分析内容]
+    
+    D --> G[_translate_content]
+    G --> H[构建翻译请求]
+    H --> I[发送POST请求到DeepSeek API]
+    I --> J[重试机制: 最多3次]
+    J --> K[翻译成功?]
+    K -->|是| L[返回翻译结果]
+    K -->|否| M[❌ 翻译失败]
+    
+    E --> N[_translate_title]
+    N --> O[构建标题翻译请求]
+    O --> P[发送POST请求到DeepSeek API]
+    P --> Q[重试机制: 最多2次]
+    Q --> R[翻译成功?]
+    R -->|是| S[返回翻译标题]
+    R -->|否| T[❌ 标题翻译失败]
+    
+    F --> U[_analyze_with_deepseek]
+    U --> V[构建分析请求]
+    V --> W[发送POST请求到DeepSeek API]
+    W --> X[重试机制: 最多3次]
+    X --> Y[分析成功?]
+    Y -->|是| Z[返回详细分析报告]
+    Y -->|否| AA[❌ 分析失败]
+    
+    L --> BB[汇总API结果]
+    S --> BB
+    Z --> BB
+    M --> BB
+    T --> BB
+    AA --> BB
+    
+    BB --> CC[创建CollectorItem对象]
+    CC --> DD[包含原文、译文、分析]
+    DD --> EE[标记为新版本]
+    EE --> FF[添加到结果列表]
+    
+    style A fill:#e1f5fe
+    style B fill:#fff3e0
+    style C fill:#ff8a65
+    style BB fill:#e8f5e8
+    style FF fill:#81c784
+    
+    classDef apiCall fill:#ffecb3,stroke:#ff8f00,stroke-width:2px
+    classDef retry fill:#f3e5f5,stroke:#e91e63,stroke-width:2px
+    classDef success fill:#e8f5e8,stroke:#4caf50,stroke-width:2px
+    classDef error fill:#ffebee,stroke:#f44336,stroke-width:2px
+    
+    class D,E,F apiCall
+    class J,Q,X retry
+    class L,S,Z,BB,FF success
+    class M,T,AA error 

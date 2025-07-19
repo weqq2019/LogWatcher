@@ -1,0 +1,140 @@
+graph TB
+    subgraph "🌐 外部数据源"
+        A1[📰 HackerNews RSS]
+        A2[🚀 ProductHunt RSS]
+        A3[💻 DevTo RSS]
+        A4[🐙 GitHub API]
+        A5[🎯 Cursor 官网]
+    end
+    
+    subgraph "🤖 数据收集器层"
+        B1[HackerNewsCollector]
+        B2[ProductHuntCollector]
+        B3[DevToCollector]
+        B4[TechToolsCollector]
+        B5[AIToolsCollector]
+        B6[DevToolsCollector]
+        B7[CursorCollector]
+    end
+    
+    subgraph "🧠 AI智能分析"
+        C1[🔤 内容翻译]
+        C2[📝 标题翻译]
+        C3[🔍 深度分析]
+        C4[DeepSeek API]
+    end
+    
+    subgraph "🏗️ 后端服务层"
+        D1[CollectorManager<br/>收集器管理]
+        D2[FastAPI 应用]
+        D3[定时任务调度<br/>APScheduler]
+        D4[数据处理引擎]
+    end
+    
+    subgraph "🗄️ 数据存储层"
+        E1[MySQL 数据库]
+        E2[Redis 缓存]
+        E3[📊 数据模型]
+    end
+    
+    subgraph "🎨 前端界面层"
+        F1[📊 仪表盘]
+        F2[📰 技术新闻]
+        F3[🔧 工具更新]
+        F4[📦 项目管理]
+        F5[🎯 Cursor 更新]
+    end
+    
+    subgraph "👥 用户交互"
+        G1[🌐 Web 浏览器]
+        G2[📱 移动设备]
+    end
+    
+    %% 数据流向
+    A1 --> B1
+    A2 --> B2
+    A3 --> B3
+    A4 --> B4
+    A4 --> B5
+    A4 --> B6
+    A5 --> B7
+    
+    B1 --> D1
+    B2 --> D1
+    B3 --> D1
+    B4 --> D1
+    B5 --> D1
+    B6 --> D1
+    B7 --> D1
+    
+    B7 --> C1
+    B7 --> C2
+    B7 --> C3
+    C1 --> C4
+    C2 --> C4
+    C3 --> C4
+    
+    D1 --> D2
+    D1 --> D4
+    D3 --> D1
+    D4 --> E1
+    D4 --> E2
+    
+    D2 --> F1
+    D2 --> F2
+    D2 --> F3
+    D2 --> F4
+    D2 --> F5
+    
+    F1 --> G1
+    F2 --> G1
+    F3 --> G1
+    F4 --> G1
+    F5 --> G1
+    
+    F1 --> G2
+    F2 --> G2
+    F3 --> G2
+    F4 --> G2
+    F5 --> G2
+    
+    %% 数据模型详情
+    E3 --> E1
+    E3 -.-> |包含| H1[📰 NewsArticle<br/>新闻文章]
+    E3 -.-> |包含| H2[📦 ProjectRelease<br/>项目发布]
+    E3 -.-> |包含| H3[🔧 ToolUpdate<br/>工具更新]
+    E3 -.-> |包含| H4[🎯 CursorUpdate<br/>Cursor更新]
+    E3 -.-> |包含| H5[📊 CollectorLog<br/>收集器日志]
+    
+    %% 核心流程标注
+    I1[⏰ 定时触发]
+    I2[🔄 数据采集]
+    I3[🧠 AI增强]
+    I4[💾 数据存储]
+    I5[🎨 界面展示]
+    
+    I1 --> I2
+    I2 --> I3
+    I3 --> I4
+    I4 --> I5
+    
+    %% 样式定义
+    classDef dataSource fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef collector fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef ai fill:#f3e5f5,stroke:#e91e63,stroke-width:2px
+    classDef backend fill:#e8f5e8,stroke:#4caf50,stroke-width:2px
+    classDef storage fill:#fce4ec,stroke:#ad1457,stroke-width:2px
+    classDef frontend fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
+    classDef user fill:#f1f8e9,stroke:#689f38,stroke-width:2px
+    classDef model fill:#ede7f6,stroke:#5e35b1,stroke-width:2px
+    classDef process fill:#fff8e1,stroke:#ff8f00,stroke-width:2px
+    
+    class A1,A2,A3,A4,A5 dataSource
+    class B1,B2,B3,B4,B5,B6,B7 collector
+    class C1,C2,C3,C4 ai
+    class D1,D2,D3,D4 backend
+    class E1,E2,E3 storage
+    class F1,F2,F3,F4,F5 frontend
+    class G1,G2 user
+    class H1,H2,H3,H4,H5 model
+    class I1,I2,I3,I4,I5 process

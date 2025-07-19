@@ -10,7 +10,7 @@ services:
       MYSQL_USER: logwatcher
       MYSQL_PASSWORD: logwatcher123
     ports:
-      - "3306:3306"
+      - "23307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     restart: unless-stopped
@@ -19,7 +19,7 @@ services:
     image: redis:7-alpine
     container_name: logwatcher-redis
     ports:
-      - "6379:6379"
+      - "26379:6379"
     restart: unless-stopped
 
   backend:
@@ -32,7 +32,7 @@ services:
       - DATABASE_URL=mysql+pymysql://logwatcher:logwatcher123@mysql:3306/logwatcher
       - REDIS_URL=redis://redis:6379/0
     ports:
-      - "8000:8000"
+      - "28000:8000"
     volumes:
       - ./backend:/app
     restart: unless-stopped
@@ -43,7 +43,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "3000:3000"
+      - "23000:3000"
     volumes:
       - ./frontend:/app
     restart: unless-stopped

@@ -1,0 +1,46 @@
+graph TD
+    A[遍历每个版本] --> B[查询数据库CursorUpdate表]
+    B --> C[检查版本是否存在]
+    C -->|存在| D[📋 版本已存在]
+    C -->|不存在| E[🆕 新版本]
+    
+    D --> F[跳过API调用]
+    F --> G[获取数据库中的数据]
+    G --> H[已存在数据包含:]
+    H --> I[- 原文内容<br/>- 翻译内容<br/>- 分析结果<br/>- 版本信息]
+    I --> J[使用现有数据创建CollectorItem]
+    J --> K[标记为existing状态]
+    K --> L[采集统计: existing_versions++]
+    
+    E --> M[调用3个API]
+    M --> N[增加API调用计数]
+    N --> O[新版本数据包含:]
+    O --> P[- 原文内容<br/>- 翻译内容<br/>- 分析结果<br/>- 版本信息]
+    P --> Q[创建新的CollectorItem]
+    Q --> R[标记为new状态]
+    R --> S[采集统计: new_versions++]
+    
+    L --> T[添加到结果列表]
+    S --> T
+    T --> U[继续下一个版本]
+    
+    U --> V[所有版本处理完成]
+    V --> W[生成采集统计报告]
+    W --> X[输出统计信息:]
+    X --> Y[- 总版本数<br/>- 新版本数<br/>- 已存在版本数<br/>- API调用总数]
+    
+    style A fill:#e1f5fe
+    style D fill:#e8f5e8
+    style E fill:#fff3e0
+    style W fill:#f3e5f5
+    style Y fill:#e1f5fe
+    
+    classDef database fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef existing fill:#e8f5e8,stroke:#4caf50,stroke-width:2px
+    classDef new fill:#fff3e0,stroke:#ff8f00,stroke-width:2px
+    classDef stats fill:#f3e5f5,stroke:#e91e63,stroke-width:2px
+    
+    class B,C,G database
+    class D,F,J,K,L existing
+    class E,M,Q,R,S new
+    class W,X,Y stats 

@@ -1,0 +1,55 @@
+graph TD
+    A[🔄 开始采集 Cursor 更新日志] --> B[📥 获取网站数据]
+    B --> C[🔍 解析HTML页面]
+    C --> D[📋 找到版本列表]
+    D --> E[🔄 开始处理版本数据]
+    
+    E --> F[📊 显示总体进度条]
+    F --> G[处理每个版本]
+    
+    G --> H[检查数据库]
+    H --> I{版本是否存在?}
+    
+    I -->|存在| J[📋 跳过API调用]
+    I -->|不存在| K[🆕 新版本 - 开始API调用]
+    
+    J --> L[⏱️ 显示处理时间]
+    L --> M[继续下一个版本]
+    
+    K --> N[🔄 API调用进度显示]
+    N --> O[第1步: 翻译内容]
+    N --> P[第2步: 翻译标题]
+    N --> Q[第3步: AI分析]
+    
+    O --> R[📊 显示API调用详情]
+    P --> R
+    Q --> R
+    
+    R --> S[⏱️ 显示每个API用时]
+    S --> T[🎉 版本处理完成]
+    T --> M
+    
+    M --> U{所有版本完成?}
+    U -->|否| G
+    U -->|是| V[📊 显示最终进度条]
+    
+    V --> W[🎉 采集完成]
+    W --> X[📊 显示统计信息]
+    X --> Y[📋 总版本数<br/>🆕 新版本数<br/>📚 已存在版本<br/>💰 API调用次数<br/>⏱️ 总用时<br/>📈 平均用时]
+    
+    style A fill:#e1f5fe
+    style N fill:#fff3e0
+    style R fill:#f3e5f5
+    style W fill:#e8f5e8
+    style X fill:#f3e5f5
+    style Y fill:#e1f5fe
+    
+    classDef progress fill:#ffecb3,stroke:#ff8f00,stroke-width:2px
+    classDef api fill:#f3e5f5,stroke:#e91e63,stroke-width:2px
+    classDef stats fill:#e8f5e8,stroke:#4caf50,stroke-width:2px
+    classDef time fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    
+    class F,V progress
+    class N,O,P,Q,R api
+    class W,X,Y stats
+    class L,S,T time 

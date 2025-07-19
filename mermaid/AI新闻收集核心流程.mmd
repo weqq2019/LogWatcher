@@ -1,0 +1,53 @@
+sequenceDiagram
+    participant U as 👤 用户
+    participant F as 📱 前端
+    participant A as 🚀 FastAPI
+    participant M as 📦 Manager
+    participant C as 🤖 Collector
+    participant API as 🌐 OpenAI-HK
+    participant DB as 🗄️ 数据库
+    
+    U->>F: 点击收集AI新闻
+    F->>A: POST /api/v1/news/ai/collect
+    
+    A->>A: 🔒 检查每日调用限制
+    alt 超过限制
+        A->>F: ❌ 429 Too Many Requests
+        F->>U: 显示限制提示
+    else 未超过限制
+        A->>M: 获取AI新闻收集器
+        M->>C: 返回收集器实例
+        
+        A->>C: 🏃 运行收集器
+        C->>C: 📝 构建AI提示词
+        C->>API: 🔗 发送HTTP请求
+        
+        alt 网络连接失败
+            API-->>C: ❌ 连接超时/失败
+            C->>C: 🔄 创建备用新闻
+            Note over C: "AI新闻收集服务暂时不可用"
+        else 连接成功
+            API->>C: ✅ 返回AI生成内容
+            C->>C: 📊 解析新闻内容
+            C->>C: 🔍 创建CollectorItem对象
+        end
+        
+        C->>DB: 💾 保存新闻到数据库
+        loop 每条新闻
+            C->>DB: 🔍 检查重复标题
+            alt 不重复
+                C->>DB: ✅ 插入新闻记录
+            else 重复
+                C->>C: ⏭️ 跳过该新闻
+            end
+        end
+        
+        C->>A: 📈 返回收集结果
+        A->>DB: 📊 更新API调用记录
+        A->>F: ✅ 返回成功响应
+        F->>U: 📋 显示新闻列表
+    end
+    
+    Note over U,DB: 🔄 整个流程支持异步处理
+    Note over C,API: ⚙️ 支持代理配置和SSL验证
+    Note over C,DB: 🔒 自动去重和数据验证

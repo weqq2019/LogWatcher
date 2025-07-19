@@ -1,0 +1,52 @@
+graph TD
+    A[开始 - CursorCollector.collect] --> B[发送HTTP请求到Cursor网站]
+    B --> C[获取HTML页面内容]
+    C --> D[解析HTML获取版本信息]
+    D --> E[使用BeautifulSoup解析版本号和日期]
+    E --> F[多策略解析版本信息]
+    
+    F --> G[策略1: 版本号-日期匹配]
+    F --> H[策略2: 容器结构解析]
+    F --> I[策略3: 模式匹配]
+    F --> J[策略4: 备用数据]
+    
+    G --> K[解析成功?]
+    H --> K
+    I --> K
+    J --> K
+    
+    K -->|是| L[遍历每个版本]
+    K -->|否| M[使用备用版本数据]
+    M --> L
+    
+    L --> N[检查数据库是否存在此版本]
+    N -->|存在| O[跳过API调用<br/>使用现有数据]
+    N -->|不存在| P[💰 新版本需要API调用]
+    
+    O --> Q[创建CollectorItem对象]
+    P --> R[调用DeepSeek API翻译内容]
+    R --> S[调用DeepSeek API翻译标题]
+    S --> T[调用DeepSeek API分析内容]
+    T --> U[生成详细分析报告]
+    U --> Q
+    
+    Q --> V[添加到结果列表]
+    V --> W[所有版本处理完成?]
+    W -->|否| L
+    W -->|是| X[按版本号排序]
+    X --> Y[返回采集结果]
+    
+    style A fill:#e1f5fe
+    style P fill:#fff3e0
+    style R fill:#f3e5f5
+    style S fill:#f3e5f5
+    style T fill:#f3e5f5
+    style Y fill:#e8f5e8
+    
+    classDef apiCall fill:#ffecb3,stroke:#ff8f00,stroke-width:2px
+    classDef database fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef parsing fill:#f1f8e9,stroke:#689f38,stroke-width:2px
+    
+    class R,S,T apiCall
+    class N,O database
+    class D,E,F,G,H,I parsing 
