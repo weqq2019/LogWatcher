@@ -265,12 +265,14 @@ git branch
 
 使用以下格式的提交消息：
 ```
-<emoji> <type>: <description> [#issue-number]
+<emoji> <type>: <description> #issue-number
 
 🚀 Generated with [Claude Code](https://claude.ai/code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 ```
+
+**📌 重要**：issue编号为必填项，如果当前没有对应issue，请先创建一个。
 
 ### Emoji 映射规则
 - 🚀 `feat` - 新功能
@@ -291,7 +293,7 @@ git add .
 
 # 2. 使用模板提交
 git commit -m "$(cat <<'EOF'
-<emoji> <type>: <description> [#issue-number]
+<emoji> <type>: <description> #issue-number
 
 🚀 Generated with [Claude Code](https://claude.ai/code)
 
@@ -328,6 +330,10 @@ Claude 执行流程：
    
    请回复：yes/y 执行 | no/n 跳过 | push 执行并推送
    ```
+
+**📌 特殊情况处理**：
+- 如果用户未提供issue编号，Claude应提醒创建issue或使用通用issue编号
+- 建议预设通用issue：#1(文档), #2(配置), #3(功能), #4(修复)
 3. **等待用户确认**后执行相应操作
 4. 使用标准化提交消息格式
 
