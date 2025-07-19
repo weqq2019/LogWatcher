@@ -1,70 +1,38 @@
 import os
 from dotenv import load_dotenv
 
+# 加载 .env 文件
 load_dotenv()
 
 
-class Config:
+class Settings:
     """应用配置类"""
 
-    # 基础配置
-    APP_NAME = os.getenv("APP_NAME", "LogWatcher")
-    APP_VERSION = os.getenv("APP_VERSION", "1.0.0")
-    DEBUG = os.getenv("DEBUG", "True").lower() == "true"
-    SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here")
+    def __init__(self):
+        # 数据库配置
+        self.database_url = os.getenv(
+            "DATABASE_URL",
+            "mysql+pymysql://logwatcher:logwatcher123@mysql:3306/logwatcher",
+        )
 
-    # 数据库配置
-    DATABASE_URL = os.getenv(
-        "DATABASE_URL", "mysql+pymysql://root:password@localhost:3306/logwatcher"
-    )
-    DATABASE_ECHO = os.getenv("DATABASE_ECHO", "False").lower() == "true"
+        # Redis 配置
+        self.redis_url = os.getenv("REDIS_URL", "redis://redis:6379/0")
 
-    # Redis配置
-    REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+        # DeepSeek API 配置 - 使用用户指定的地址和密钥
+        self.deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
+        self.deepseek_api_url = "https://api.openai-hk.com/v1/chat/completions"
 
-    # API配置
-    GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+        # 应用配置
+        self.app_name = os.getenv("APP_NAME", "LogWatcher")
+        self.debug = os.getenv("DEBUG", "false").lower() == "true"
 
-    # 收集器配置
-    COLLECTOR_INTERVAL = int(os.getenv("COLLECTOR_INTERVAL", "3600"))  # 1小时
-    MAX_ARTICLES_PER_SOURCE = int(os.getenv("MAX_ARTICLES_PER_SOURCE", "50"))
+        # AI新闻收集限制配置
+        self.daily_ai_collect_limit = int(os.getenv("DAILY_AI_COLLECT_LIMIT", "10"))
 
-    # 分页配置
-    DEFAULT_PAGE_SIZE = int(os.getenv("DEFAULT_PAGE_SIZE", "20"))
-    MAX_PAGE_SIZE = int(os.getenv("MAX_PAGE_SIZE", "100"))
-
-    # 新闻源配置
-    NEWS_SOURCES = [
-        {
-            "name": "Hacker News",
-            "url": "https://news.ycombinator.com/rss",
-            "type": "rss",
-        },
-        {
-            "name": "GitHub Trending",
-            "url": "https://github.com/trending",
-            "type": "web",
-        },
-        {"name": "Product Hunt", "url": "https://www.producthunt.com/", "type": "web"},
-    ]
-
-    # 工具监控配置
-    MONITORED_TOOLS = [
-        {
-            "name": "OpenAI",
-            "github_repo": "openai/openai-python",
-            "website": "https://openai.com/",
-            "changelog_url": "https://openai.com/api/changelog",
-        },
-        {"name": "Cursor", "website": "https://cursor.com/", "twitter": "@cursor_ai"},
-        {
-            "name": "GitHub CLI",
-            "github_repo": "cli/cli",
-            "website": "https://cli.github.com/",
-        },
-    ]
+        # AI模型配置
+        self.ai_model = os.getenv(
+            "AI_MODEL", "grok-3-deepsearch"
+        )  # 使用grok-3-deepsearch模型
 
 
-# 全局配置实例
-config = Config()
+settings = Settings()

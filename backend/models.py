@@ -46,6 +46,7 @@ class NewsArticle(Base):
     author = Column(String(100), comment="作者")
     published_at = Column(DateTime, index=True, comment="发布时间")
     tags = Column(JSON, comment="标签列表")
+    model = Column(String(100), comment="AI模型名称")
     category_id = Column(Integer, ForeignKey("categories.id"), comment="分类ID")
     read_count = Column(Integer, default=0, comment="阅读次数")
     is_featured = Column(Boolean, default=False, comment="是否推荐")
@@ -125,6 +126,28 @@ class UserPreference(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+class CursorUpdate(Base):
+    """Cursor 更新日志表"""
+
+    __tablename__ = "cursor_updates"
+
+    id = Column(Integer, primary_key=True, index=True)
+    version = Column(String(50), unique=True, index=True, comment="版本号")
+    release_date = Column(DateTime, index=True, comment="发布日期")
+    title = Column(String(500), comment="更新标题")
+    translated_title = Column(String(500), comment="中文翻译标题")
+    original_content = Column(Text, comment="原始英文内容")
+    translated_content = Column(Text, comment="中文翻译内容")
+    analysis = Column(Text, comment="DeepSeek 分析结果")
+    url = Column(String(1000), comment="更新链接")
+    collector = Column(String(100), default="cursor_collector", comment="采集器名称")
+    collected_at = Column(DateTime, index=True, comment="采集时间")
+    is_major = Column(Boolean, default=False, comment="是否重大更新")
+    is_active = Column(Boolean, default=True, comment="是否激活")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class CollectorLog(Base):
     """收集器日志表"""
 
@@ -142,3 +165,20 @@ class CollectorLog(Base):
     STATUS_SUCCESS = "success"
     STATUS_FAILED = "failed"
     STATUS_RUNNING = "running"
+
+
+class APICallRecord(Base):
+    """API调用记录表 - 用于频率限制"""
+
+    __tablename__ = "api_call_records"
+
+    id = Column(Integer, primary_key=True, index=True)
+    api_name = Column(String(100), index=True, comment="API名称")
+    call_date = Column(String(10), index=True, comment="调用日期 (YYYY-MM-DD)")
+    call_count = Column(Integer, default=0, comment="当日调用次数")
+    last_call_time = Column(DateTime, default=datetime.utcnow, comment="最后调用时间")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # API名称常量
+    API_AI_NEWS_COLLECT = "ai_news_collect"

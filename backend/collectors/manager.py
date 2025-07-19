@@ -4,10 +4,10 @@ from datetime import datetime
 import logging
 
 from .base import BaseCollector, CollectorItem
-from .rss_collector import HackerNewsCollector, ProductHuntCollector, DevToCollector
-from .github_collector import TechToolsCollector, AIToolsCollector, DevToolsCollector
+from .cursor_collector import CursorCollector
+from .ai_news_collector import AINewsCollector
 from database import get_db_context
-from models import NewsArticle, ProjectRelease, ToolUpdate, Category
+from models import NewsArticle, ProjectRelease, ToolUpdate, Category, CursorUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -21,23 +21,11 @@ class CollectorManager:
 
     def initialize_collectors(self):
         """初始化所有收集器"""
-        # RSS收集器
-        self.collectors.extend(
-            [
-                HackerNewsCollector(),
-                ProductHuntCollector(),
-                DevToCollector(),
-            ]
-        )
+        # Cursor收集器
+        self.collectors.append(CursorCollector())
 
-        # GitHub收集器
-        self.collectors.extend(
-            [
-                TechToolsCollector(),
-                AIToolsCollector(),
-                DevToolsCollector(),
-            ]
-        )
+        # AI新闻收集器
+        self.collectors.append(AINewsCollector("AI新闻收集器"))
 
         logger.info(f"初始化了 {len(self.collectors)} 个收集器")
 
@@ -145,6 +133,8 @@ class CollectorManager:
                         await self.save_project_release(db, item)
                     elif self.is_tool_collector(collector):
                         await self.save_tool_update(db, item)
+                    elif self.is_cursor_collector(collector):
+                        await self.save_cursor_update(db, item)
 
                     saved_count += 1
 
@@ -158,25 +148,20 @@ class CollectorManager:
     def is_news_collector(self, collector: BaseCollector) -> bool:
         """判断是否为新闻收集器"""
         return collector.__class__.__name__ in [
-            "HackerNewsCollector",
-            "ProductHuntCollector",
-            "DevToCollector",
+            "AINewsCollector",
         ]
 
     def is_project_collector(self, collector: BaseCollector) -> bool:
         """判断是否为项目收集器"""
-        return (
-            "Collector" in collector.__class__.__name__
-            and "GitHub" in collector.__class__.__bases__[0].__name__
-        )
+        return False  # 已删除所有项目收集器
 
     def is_tool_collector(self, collector: BaseCollector) -> bool:
         """判断是否为工具收集器"""
-        return collector.__class__.__name__ in [
-            "TechToolsCollector",
-            "AIToolsCollector",
-            "DevToolsCollector",
-        ]
+        return False  # 已删除所有工具收集器
+
+    def is_cursor_collector(self, collector: BaseCollector) -> bool:
+        """判断是否为 Cursor 收集器"""
+        return collector.__class__.__name__ == "CursorCollector"
 
     async def is_duplicate(self, db, item: CollectorItem) -> bool:
         """检查数据是否已存在"""
@@ -198,6 +183,16 @@ class CollectorManager:
         existing_tool = db.query(ToolUpdate).filter(ToolUpdate.url == item.url).first()
         if existing_tool:
             return True
+
+        # 检查 Cursor 更新表
+        if item.extra_data and "version" in item.extra_data:
+            existing_cursor = (
+                db.query(CursorUpdate)
+                .filter(CursorUpdate.version == item.extra_data["version"])
+                .first()
+            )
+            if existing_cursor:
+                return True
 
         return False
 
@@ -251,6 +246,41 @@ class CollectorManager:
             is_major="major" in (item.tags or []),
         )
         db.add(update)
+
+    async def save_cursor_update(self, db, item: CollectorItem):
+        """保存 Cursor 更新"""
+        extra_data = item.extra_data or {}
+
+        # 检查是否已存在该版本
+        existing = (
+            db.query(CursorUpdate)
+            .filter(CursorUpdate.version == extra_data.get("version", ""))
+            .first()
+        )
+
+        if existing:
+            # 更新现有记录
+            existing.title = item.title
+            existing.original_content = extra_data.get("original_content", "")
+            existing.translated_content = extra_data.get("translated_content", "")
+            existing.analysis = extra_data.get("analysis", "")
+            existing.url = item.url
+            existing.collected_at = datetime.utcnow()
+            existing.updated_at = datetime.utcnow()
+        else:
+            # 创建新记录
+            cursor_update = CursorUpdate(
+                version=extra_data.get("version", ""),
+                release_date=item.published_at or datetime.utcnow(),
+                title=item.title,
+                original_content=extra_data.get("original_content", ""),
+                translated_content=extra_data.get("translated_content", ""),
+                analysis=extra_data.get("analysis", ""),
+                url=item.url,
+                collected_at=datetime.utcnow(),
+                is_major=extra_data.get("is_major", False),
+            )
+            db.add(cursor_update)
 
     async def get_category_id(self, db, category_name: str) -> Optional[int]:
         """获取或创建分类ID"""
